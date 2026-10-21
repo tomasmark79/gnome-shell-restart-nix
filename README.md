@@ -121,5 +121,10 @@ Contributions and independent reproductions are welcome. Start with
 controller, longer stress runs, extension compatibility and upstream review of
 the GJS lifetime changes. Do not treat a UI-only redraw as a complete restart.
 
+The [research companion](https://github.com/tomasmark79/gnome-shell-restart-research)
+preserves the earlier architecture experiments, negative results and 224
+sanitized historical reports. Its source snapshot is historical; this repository
+contains the current implementation and deployment module.
+
 Project contributions are licensed under GPL-2.0-or-later; upstream notices and
 licenses remain applicable. See [LICENSE](LICENSE) and [NOTICE.md](NOTICE.md).
