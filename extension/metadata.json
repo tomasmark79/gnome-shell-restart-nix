@@ -1,0 +1,7 @@
+{
+  "uuid": "restart-island@tgnome.local",
+  "name": "GNOME Shell Context Restart Experiment",
+  "description": "Controller fixture for the patched GNOME Shell complete runtime restart; requires the matching native patch",
+  "shell-version": ["50"],
+  "version": 1
+}

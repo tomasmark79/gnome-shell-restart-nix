@@ -1,0 +1,75 @@
+{
+  "date": "2026-10-21",
+  "versions": {
+    "gnomeShell": "50.5",
+    "gjs": "1.88.1",
+    "spiderMonkey": "140",
+    "system": "x86_64-linux"
+  },
+  "automated": {
+    "verified": true,
+    "desktopCycles": 5,
+    "nativeVmCycles": 5,
+    "soakSeconds": 65,
+    "cliSafetyTests": 12,
+    "reportSha256": {
+      "desktop": "274caeab792519a92c04f7b1d886bfc28b9a2707fb218b07736b9a5e08990607",
+      "nativeControl": "cc4375adde4b441f9022b9dade7a48190ff5d37c4f90f86ca677f606c3be999c",
+      "nativeVm": "4fa64b514e263676f85e23b528efba3c9525b8de101d58987bf35f5b087806f6"
+    },
+    "testedSourceSha256": {
+      "extension/extension.js": "e126c744defb983259ac574df1ba412a145926d37f2f08afb14d92d583ace8be",
+      "extension/metadata.json": "c06818242507256d7cee9bb766705a1ab8e6c7c658d040815b5d4764d4770d79",
+      "flake.lock": "fe6fa845adc079b7edb6782a280f435c682f35592464ccb5287fcd8e696dcd59",
+      "flake.nix": "222ca8e130103617816b44727c61e28a00d27d904371c78d131800638d808434",
+      "module.nix": "1c317fcf7b9d0781944e7ba4fe0fe2c424a3a0d7d4bd2998f38e402f53f26da6",
+      "packages.nix": "7ab25e4319cde9971de03c73ca591abc91a31a3188c05f4be0fd9d257b4b3d85",
+      "restart.py": "f8de8e9fb9e695199112ffed3282ba1bad555bfa78d0d23800c66038ada6e795",
+      "shell/buildFullContext.py": "1f8716a0e75ab09f00acd11d35af5bcb7599e26434bc51cdc7583552936a7152",
+      "shell/buildTypeRebind.py": "6a0b411c3a76e1985607be76e98589bff6f81b3fe199158bd7fd4c7824bed700",
+      "shell/fullContextAtspi.c.inc": "3afb49eae2dc5fa07bedc5aba7cdd610c070a80e9d0b40723f81c91404d7ba47",
+      "shell/fullContextInit.js": "ea5379b5f1a7dd2d425950a261a80b60263dec5064eb1f945529743466f585fc",
+      "shell/fullContextShellDBus.js": "cd0b4a6811e55960d9a14f4d39ccc111d07fb0b81b179f82cbfbb6f0836acfd3",
+      "shell/fullContextState.c.inc": "3fb5b13aa22228e32865c3f88b8b62b3b1e18a70bf9c0d8e6dd28dba7fde9be7",
+      "shell/gjs-interruption.patch": "26bd9a75c951db56b30741e2987f7a2fcfe6b9dd9906e11fea5dd805eb1359b4",
+      "shell/gjsCallbackLifetimes.inc": "377675f1f3e2eddfe452521a37dd560cf247cd04c74ad7242f814ea41faa29ab",
+      "shell/gjsNativeType.cpp.inc": "01ce02f80a8dbf8b6475c640c76316131e1af8bf2ef2f4252897911d8cb6ef21",
+      "shell/gjsTypeRebindPrivate.inc": "f60e65130f2681bf174b74e133ade3672304ef99cce2aeefe4394753996e2496",
+      "shell/gjsTypeRebindVfunc.inc": "e46dfd2c842952067328b86f3776c73c9920513da053f308b4ac0b41d3ff3d65",
+      "shell/mainLifecycle.js": "9351d9de4306f6b1c3e977c90cd842b3d954b1c6112bcbf248f53a0c16ac9a9e",
+      "shell/native-loop.patch": "759ffed1c0693e8f5ec28cef4e2da707ad9d8c72bc6534a7dc08ad8da58b1d8e",
+      "shell/panel-lifecycle.patch": "48a09da1bdf683218dc373416b5095012107256e353329df65d86875e657e9c0",
+      "shell/panelLifecycle.js": "3b2e231386ef29f4fad41514b4b75ef5b1a1c24ee74d5c2ec8f03b902b4fca2a",
+      "shell/runtimeGlobal.c.inc": "3d1ecdd7e8e9a40176f39ddcc4808f9ddd75b46cb590e2494bf0d1ed604e657e",
+      "shell/runtimeInit.js": "622faf35ed6b9574f3f912a9b99d4d28cfabb0a1e8d520820d4b10b449a765d6",
+      "shell/tgnome-runtime.h": "dee79fff994a8fea016ca5be6f580b63fe964dc3d74db2cb02ffc5128cc38c7e",
+      "tests/full_context.py": "ffae5bdde759576373cece621d45217b10467bf2204cd6bab181f9da1e4fa97f",
+      "tests/isolated.py": "9f45dc1fd2462394823b5ce2f2a03714c414466d2fd7b6c5deea567bae56c57c",
+      "tests/native-type-probe.cpp": "594e83d303d4f3bfc276e51e14021bde84516ef81edef84ccb9af313c2546423",
+      "tests/probe.c": "09a63bfb71df64607a224775896b49b8b456d3f2f87f6e3cd937774aeca94e73",
+      "tests/test_safety.py": "93290463d3da225cfb3eb18ac6d9df2998db115cba338aa552a80c9760a9fd9e",
+      "tests/type-rebind-probe.cpp": "55af85fad7f1cc882f5a0308b547012f0e999396e2e8fea840233ea27e0c0e49",
+      "tests/type-rebind-supervisor.py": "3909270f99b9c12f81eb7af5e680d7fce301fe6a48550f9dd104a56c33eb6c8b",
+      "tests/verify-results.py": "66dac0eea095d31f87a9838654abf125ad5b2ba5881a12c7ed5dc22a280cf7d2",
+      "tests/vm-full-context.py": "5be64fcf62b179c5f02b1ebc2ff38c421c869f9c3bfabd737139f62c978d86d1",
+      "tests/vm-security.nix": "a0df8795858158a75ebb90d708c9704810486716e3f5ffd9b0b3a8294d59db48",
+      "tests/vm-security.py": "78c5c0e48701f45aeb767ddd53f6fd9da0976bab029e262e35ee77867849db37",
+      "tgnome.py": "de0436322adf4bbde3817fdf568b34bcefd8ce2a6fa1c9514f3e08c1c9dbfa94"
+    }
+  },
+  "hardware": {
+    "completedResets": 1,
+    "sameCompositorPid": true,
+    "contextsFinalized": 1,
+    "distinctRuntimeEpochs": true,
+    "preservedWindowCount": 7,
+    "preservedWindowFrames": true,
+    "retiredCallbacksEmpty": true,
+    "shortcuts": "User confirmed all personal shortcuts work; manual observation",
+    "clientSocketsIndependentlyMeasured": false
+  },
+  "publicationOnlyChanges": [
+    "Extension display name/description updated; executable implementation unchanged"
+  ],
+  "rawPersonalDesktopDataIncluded": false
+}
