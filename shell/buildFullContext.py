@@ -64,6 +64,20 @@ void shell_global_tgnome_set_external_accelerators (ShellGlobal *global, const c
 G_END_DECLS''')
 replace('js/ui/shellDBus.js', '        this._grabbers = new Map();',
         '        this._grabbers = new Map();\n        tgnomeRestoreExternalAccelerators(this);')
+# GNOME 50 no longer includes the historical Xorg "r" command. Restore that
+# spelling only in this patched build, using the guarded external controller.
+# Default GLib child reaping avoids leaving a JS child-watch in the old runtime.
+replace('js/ui/runDialog.js',
+        "            'lg': () => Main.createLookingGlass().open(),",
+        """            'r': () => {
+                try {
+                    GLib.spawn_async(null, ['restart-gnome-shell'], null,
+                        GLib.SpawnFlags.SEARCH_PATH, null);
+                } catch (error) {
+                    this._showError(error.message);
+                }
+            },
+            'lg': () => Main.createLookingGlass().open(),""")
 replace('src/meson.build', 'gnome_shell_deps = [',
         "gnome_shell_deps = [\n  dependency('atspi-2'),")
 replace('js/misc/ibusManager.js',

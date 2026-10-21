@@ -55,6 +55,13 @@ leave the desktop unlocked and stop screen sharing/recording.
 restart-gnome-shell
 ```
 
+Alternatively, press **Alt+F2**, enter **`r`**, and press **Enter**. This patched
+run-dialog command launches the same controller without retaining a JS child
+watch in the retired runtime. GNOME's internal commands require the
+`org.gnome.shell development-tools` setting to be enabled. The dialog releases
+its modal grab before the controller requests preparation. Choose either the
+dialog gesture or the terminal command for a single intended restart.
+
 Success reports `wholeShellRestarted: true`, `compositorPreserved: true` and
 different runtime epochs. Check the original document's text, type into it,
 launch another application, try custom shortcuts, overview, panel menus and

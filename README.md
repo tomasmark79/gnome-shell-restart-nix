@@ -84,6 +84,11 @@ command is `restart-gnome-shell`. It pins the running Shell's unique bus owner,
 requests cooperative preparation, and waits for a new runtime epoch and an
 actually finalized old context. It never kills or respawns Mutter.
 
+The patched build also restores **Alt+F2 → `r` → Enter** as a shortcut to the
+same controller. GNOME 50's upstream run dialog no longer includes that command.
+It remains gated by GNOME's internal-command/development-tools setting and the
+usual idle/unlocked/no-screencasting checks. The terminal command remains available.
+
 ## Scope and limitations
 
 - Requires an idle unlocked responsive Shell, without active overview, modal

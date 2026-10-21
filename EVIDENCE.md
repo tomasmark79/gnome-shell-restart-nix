@@ -1,5 +1,13 @@
 # Verified results
 
+The latest [run-dialog verification](evidence/2026-10-21-run-dialog.json) adds
+two physical **Alt+F2 → r → Enter** requests among five native VM replacements.
+All five preserve clients and custom shortcuts; lock/authentication, subsequent
+client input, the 65-second observation and retired-callback checks also pass.
+The first keyboard attempt sent input before dialog opening completed; the
+repeatable test now waits for the open dialog, entry focus and actual typed text.
+This change has not been activated or exercised on the personal desktop.
+
 Validated on 2026-10-21 for GNOME Shell/Mutter 50.5 and GJS 1.88.1.
 
 A public, redacted [evidence summary](evidence/2026-10-21.json) includes the
@@ -17,7 +25,7 @@ were clarified for publication after testing; executable behavior is unchanged.
 | Old contexts | 5 finalized; all retired callback ledger entries empty |
 | Repeated native types and vfunc dispatchers | 989 types / 229 dispatchers, unchanged across all 5 desktop cycles |
 | Native ownership, gap dispatch and child reaping | Passed directly and under Valgrind |
-| Native-backend VM, packaged `restart-gnome-shell` command | Passed, 5 complete replacements |
+| Native-backend VM, CLI and Alt+F2 `r` command | Passed, 5 complete replacements; 2 triggered through the run dialog |
 | Real custom Super+T shortcut | Passed before replacement and after each of 5 replacements; same media-key daemon |
 | Login PATH / Console application discovery | System profile retained; Console visible |
 | Negative control without external accelerator restoration | Expected failure: custom shortcut stops after first replacement |
@@ -28,14 +36,14 @@ were clarified for publication after testing; executable behavior is unchanged.
 | Updated candidate on physical desktop | One complete replacement; same compositor PID; all 7 windows and positions preserved |
 | Hardware custom shortcuts | User confirmed all personal shortcuts work after replacement |
 
-Desktop evidence is `artifacts/shortcuts-headless/result.json`. Native
+Desktop evidence is `artifacts/run-dialog-headless/result.json`. Native
 control evidence is `artifacts/native-control.json`. Both are generated,
 ignored by Git and reproduced by the README commands.
 
 The native-backend VM result is stored at:
 
 ```text
-/nix/store/3chlaj5j8jpzvfwn213jmjma6qjxiza1-vm-test-run-tgnome-full-context/evidence/tgnome-evidence/result.json
+/nix/store/8yfrsajrz38x4l9f6zhm669drpkwdam8-vm-test-run-tgnome-full-context/evidence/tgnome-evidence/result.json
 ```
 
 Its `passed`, `originalObjectiveAchieved`, `explicitNativeBackend` and
@@ -48,9 +56,9 @@ Recheck the saved evidence and produce its SHA-256/source manifest:
 
 ```sh
 python3 tests/verify-results.py \
-  --desktop artifacts/shortcuts-headless/result.json \
+  --desktop artifacts/run-dialog-headless/result.json \
   --native artifacts/native-control.json \
-  --vm /nix/store/3chlaj5j8jpzvfwn213jmjma6qjxiza1-vm-test-run-tgnome-full-context/evidence/tgnome-evidence/result.json
+  --vm /nix/store/8yfrsajrz38x4l9f6zhm669drpkwdam8-vm-test-run-tgnome-full-context/evidence/tgnome-evidence/result.json
 ```
 
 For a fresh run, build `.#full-context-native-vm` with `--print-out-paths` and

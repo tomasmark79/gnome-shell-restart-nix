@@ -41,6 +41,7 @@ for case in native['cases']:
 assert vm['passed'] and vm['originalObjectiveAchieved'] and vm['explicitNativeBackend']
 assert vm['wrongPasswordRejected'] and not vm['diagnosticProblems']
 assert len(vm['cycles']) >= 5
+assert sum(c['command'].get('trigger') == 'Alt+F2 r Enter' for c in vm['cycles']) >= 2
 assert vm['before']['pid'] == vm['nativeFinal']['pid'] == vm['afterUnlock']['pid']
 assert vm['nativeFinal']['contextsFinalized'] == len(vm['cycles'])
 assert vm['pathHasSystemProfile'] and vm['consoleVisibleBefore']

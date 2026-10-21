@@ -118,9 +118,36 @@ try:
             restart_command = (alice('restart-gnome-shell') if native_backend else alice('env TGNOME_REBIND_TYPES=1 '
                 'TGNOME_ALLOW_RUNTIME_RESET=1 TGNOME_BUS_OWNER=' + shlex.quote(owner) +
                 ' tgnome restart-shell-context'))
-            raw = machine.succeed(restart_command)
-            command = json.loads(raw)
-            state = wait_value(STATE, lambda s: not s['starting'] and s['session'])
+            if native_backend and number in (2, 4):
+                previous = evaluate(STATE)
+                machine.send_key('alt-f2')
+                wait_value('Main.runDialog?.state === 0 && '
+                           'global.stage.key_focus === Main.runDialog._entryText', bool)
+                assert evaluate('Main.runDialog._enableInternalCommands')
+                machine.send_chars('r')
+                wait_value('Main.runDialog._entryText.get_text() === "r"', bool)
+                machine.send_key('ret')
+                try:
+                    state = wait_value(STATE, lambda s: not s['starting'] and s['session']
+                                       and s['epoch'] not in epochs, timeout=45)
+                except AssertionError:
+                    report['runDialogFailure'] = evaluate('({text:Main.runDialog?._entryText.get_text(),'
+                        'error:Main.runDialog?._descriptionLabel.text,modal:Main.modalCount,'
+                        'state:Main.runDialog?.state,enabled:Main.runDialog?._enableInternalCommands})')
+                    machine.log(machine.succeed('journalctl -b --no-pager | '
+                        'grep -E "PreparationFailed|restart-gnome|TGNOME|Traceback" | tail -n 30'))
+                    raise
+                command = {'trigger': 'Alt+F2 r Enter',
+                           'evidence': 'Observed runtime state after physical VM keyboard input',
+                           'wholeShellRestarted': state['epoch'] != previous['epoch'],
+                           'compositorPreserved': state['pid'] == previous['pid'],
+                           'beforeEpoch': previous['epoch'], 'afterEpoch': state['epoch']}
+            else:
+                raw = machine.succeed(restart_command)
+                command = json.loads(raw)
+                command['trigger'] = 'CLI'
+                state = wait_value(STATE, lambda s: not s['starting'] and s['session']
+                                   and s['epoch'] not in epochs)
             assert state['pid'] == before['pid'] and state['session'] == before['session']
             assert state['epoch'] not in epochs and not state['locked']
             epochs.add(state['epoch'])
