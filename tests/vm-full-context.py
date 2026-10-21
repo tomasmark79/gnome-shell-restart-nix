@@ -3,6 +3,7 @@ import ast
 import json
 import shlex
 import time
+from typing import Any, cast
 
 
 def alice(command):
@@ -39,6 +40,91 @@ def native():
     return json.loads(ast.literal_eval(raw.strip())[0])
 
 
+def extension_call(method):
+    raw = machine.succeed(alice('gdbus call --session --dest org.gnome.Shell '
+        '--object-path /org/gnome/Shell/Extensions/Tgnome '
+        '--method org.gnome.Shell.Extensions.Tgnome.' + method))
+    return json.loads(ast.literal_eval(raw.strip())[0])
+
+
+def check_dash():
+    if not desktop_integration:
+        return None
+    return wait_value("Main.extensionManager.lookup('dash-to-dock@micxgx.gmail.com')?.state",
+                      lambda state: state == 1, timeout=20)
+
+
+def check_background_pointer():
+    setup = evaluate('''(() => {
+        global._tgnomePointerWindows = global.get_window_actors()
+            .map(a=>a.meta_window).filter(w=>!w.minimized);
+        for(const w of global._tgnomePointerWindows) w.minimize();
+        const m=Main.layoutManager.monitors[0];
+        global._tgnomePointerEvents=[];
+        global._tgnomePointerCapture=global.stage.connect('captured-event', (_s,e)=>{
+            if(e.type()===imports.gi.Clutter.EventType.BUTTON_PRESS ||
+               e.type()===imports.gi.Clutter.EventType.BUTTON_RELEASE)
+                global._tgnomePointerEvents.push({type:e.type(),button:e.get_button(),coords:e.get_coords()});
+            return imports.gi.Clutter.EVENT_PROPAGATE;
+        });
+        return {x:Math.floor(m.width*.75),y:Math.floor(m.height*.6),width:m.width,height:m.height};
+    })()''')
+    time.sleep(0.5)
+    try:
+        assert machine.qmp_client is not None
+        qmp = cast(Any, machine.qmp_client)
+        qmp.send('input-send-event', {'events': [
+            {'type':'abs','data':{'axis':'x','value':round(setup['x']*32767/(setup['width']-1))}},
+            {'type':'abs','data':{'axis':'y','value':round(setup['y']*32767/(setup['height']-1))}},
+        ]})
+        time.sleep(0.2)
+        qmp.send('input-send-event', {'events':[
+            {'type':'btn','data':{'down':True,'button':'right'}}]})
+        time.sleep(0.1)
+        qmp.send('input-send-event', {'events':[
+            {'type':'btn','data':{'down':False,'button':'right'}}]})
+        time.sleep(0.5)
+        state = evaluate('''(() => {
+            const a=Main.layoutManager._bgManagers[0].backgroundActor;
+            const [x,y]=global.get_pointer();
+            const picked=global.stage.get_actor_at_pos(imports.gi.Clutter.PickMode.REACTIVE,x,y);
+            return {opened:a._backgroundMenu.isOpen,mapped:a._backgroundMenu.actor.mapped,
+                pointer:[x,y],picked:picked?.toString(),pickedIsCurrentBackground:picked===a,
+                backgroundGroups:global.window_group.get_children().filter(a=>a instanceof imports.gi.Meta.BackgroundGroup).length,
+                events:global._tgnomePointerEvents,
+                actions:a.get_actions().map(a=>({type:a.constructor.name,enabled:a.enabled}))};
+        })()''')
+        report['lastBackgroundPointerAttempt'] = state
+        assert state['opened'] and state['mapped'] and state['pickedIsCurrentBackground'], state
+        assert state['backgroundGroups'] == 1, state
+        return state
+    finally:
+        machine.send_key('esc')
+        evaluate('''(() => {
+            global.stage.disconnect(global._tgnomePointerCapture);
+            for(const w of global._tgnomePointerWindows) w.unminimize();
+            return true;
+        })()''')
+
+
+def churn_stylesheets():
+    return evaluate('''(() => {
+        const {Gio,GLib,St}=imports.gi;
+        const path='/home/alice/tgnome-lifetime.css';
+        GLib.file_set_contents(path,'.tgnome-fixture { color: red; }');
+        const file=Gio.File.new_for_path(path);
+        const theme=St.ThemeContext.get_for_stage(global.stage).get_theme();
+        for(let n=0;n<20;n++) {
+            theme.load_stylesheet(file); theme.load_stylesheet(file);
+            theme.unload_stylesheet(file);
+            if(theme.get_custom_stylesheets().some(f=>!f || f.equal(file)))
+                throw Error('Stale custom stylesheet after unload');
+        }
+        Main.loadTheme(); GLib.unlink(path);
+        return {cycles:20,validCustomStylesheets:true};
+    })()''')
+
+
 def client_record(backend):
     return json.loads(machine.succeed(f'tail -n 1 /home/alice/{backend}.jsonl'))
 
@@ -71,6 +157,8 @@ start_all()
 report: dict[str, object] = {'passed': False, 'originalObjectiveAchieved': False, 'cycles': [],
           'classification': 'COMPLETE SHELL CONTEXT REPLACEMENT'}
 try:
+    desktop_integration = machine.succeed('cat /etc/tgnome-desktop-integration').strip() == '1'
+    report['desktopIntegration'] = desktop_integration
     machine.wait_for_unit('display-manager.service', timeout=180)
     machine.wait_for_file('/run/user/1000/wayland-0', timeout=180)
     machine.wait_for_unit('default.target', 'alice', timeout=180)
@@ -91,15 +179,7 @@ try:
     report['explicitNativeBackend'] = native_backend
     machine.succeed(alice('gnome-extensions enable restart-island@tgnome.local'))
     wait_value("Main.extensionManager.lookup('restart-island@tgnome.local')?.state === 1", bool)
-    machine.send_key('esc')
-    wait_value('Main.overview.visible', lambda visible: not visible)
-    report['shortcutBefore'] = check_custom_shortcut(1)
-    media_pid_before = machine.succeed(alice(
-        'systemctl --user show org.gnome.SettingsDaemon.MediaKeys.service --property=MainPID --value')).strip()
-    machine.send_key('meta_l')
-    wait_value('Main.overview.visible && !Main.overview.animationInProgress', bool)
-    machine.send_key('esc')
-    wait_value('Main.overview.visible', lambda visible: not visible)
+    # Establish the desktop's real client workload before checking Shell input.
     for backend in ('wayland', 'x11'):
         machine.succeed(alice(f'systemd-run --user --unit=tgnome-probe-{backend} '
             f'--property=StandardOutput=append:/home/alice/{backend}.jsonl '
@@ -107,6 +187,28 @@ try:
             f'--setenv=GDK_BACKEND={backend} --setenv=NO_AT_BRIDGE=1 '
             '--setenv=GTK_A11Y=none tgnome-client-probe'))
         machine.wait_until_succeeds(f'test -s /home/alice/{backend}.jsonl')
+    wait_value('!Main.overview.animationInProgress', bool)
+    machine.send_key('esc')
+    time.sleep(0.3)
+    report['initialUi'] = evaluate('({overview:Main.overview.visible,modal:Main.modalCount,'
+        'mode:Main.actionMode,focus:global.stage.key_focus?.constructor.name ?? null})')
+    if desktop_integration and report['initialUi']['overview']:
+        # Initial setup only. Actual overview keys are checked below and after
+        # every reset once the desktop/client workload is established.
+        evaluate('(() => { Main.overview.hide(); return true; })()')
+        report['initialSetupHideUsed'] = True
+    wait_value('Main.overview.visible', lambda visible: not visible, timeout=10)
+    report['dashBefore'] = check_dash()
+    report['themeBefore'] = churn_stylesheets()
+    report['backgroundMenuBefore'] = extension_call('ExerciseBackgroundMenu')
+    report['backgroundPointerBefore'] = check_background_pointer()
+    report['shortcutBefore'] = check_custom_shortcut(1)
+    media_pid_before = machine.succeed(alice(
+        'systemctl --user show org.gnome.SettingsDaemon.MediaKeys.service --property=MainPID --value')).strip()
+    machine.send_key('meta_l')
+    wait_value('Main.overview.visible && !Main.overview.animationInProgress', bool)
+    machine.send_key('esc')
+    wait_value('Main.overview.visible', lambda visible: not visible)
     initial = {b: client_record(b) for b in ('wayland', 'x11')}
     report['clientsBefore'] = initial
     owner = evaluate('imports.gi.Gio.DBus.session.get_unique_name()')
@@ -153,6 +255,10 @@ try:
             epochs.add(state['epoch'])
             current = native()
             assert current['contextsFinalized'] == number
+            dash_state = check_dash()
+            background_menu = extension_call('ExerciseBackgroundMenu')
+            background_pointer = check_background_pointer()
+            theme = churn_stylesheets()
             shortcut_count = check_custom_shortcut(number + 1)
             assert machine.succeed(alice(
                 'systemctl --user show org.gnome.SettingsDaemon.MediaKeys.service '
@@ -163,6 +269,9 @@ try:
             machine.send_key('esc')
             wait_value('Main.overview.visible', lambda visible: not visible)
             report['cycles'].append({'command': command, 'state': state,
+                                     'dashState': dash_state, 'backgroundMenu': background_menu,
+                                     'backgroundPointer': background_pointer,
+                                     'theme': theme,
                                      'customShortcutCount': shortcut_count,
                                      'native': current, 'clients': clients_unchanged()})
     with subtest('Real logind lock and PAM authentication after complete replacement'):
@@ -190,6 +299,10 @@ try:
         assert after['pid'] == before['pid'] and after['session'] == before['session']
         machine.wait_until_succeeds(f'test $(loginctl show-session {session} -p LockedHint --value) = no')
         report['afterUnlock'] = after
+        report['dashAfterUnlock'] = check_dash()
+        report['backgroundMenuAfterUnlock'] = extension_call('ExerciseBackgroundMenu')
+        report['backgroundPointerAfterUnlock'] = check_background_pointer()
+        report['themeAfterUnlock'] = churn_stylesheets()
         report['clientsAfterUnlock'] = clients_unchanged()
         machine.screenshot('desktop-after-context-replacement-and-unlock')
     time.sleep(65)

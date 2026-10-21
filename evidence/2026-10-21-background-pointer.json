@@ -1,0 +1,46 @@
+{
+  "date": "2026-10-21",
+  "scope": "Isolated GNOME 50.5 regression tests; no private host logs",
+  "passed": true,
+  "negativeControl": {
+    "shell": "/nix/store/a09daw0kx97m5za3czpv8q5nhhxl9bjl-gnome-shell-50.5",
+    "rightClickBeforeReset": true,
+    "rightClickAfterFirstReset": false,
+    "button": 3,
+    "pointerHit": "MetaBackgroundActor"
+  },
+  "correctedVm": {
+    "output": "/nix/store/fhg6ziabmi5x8swgpr5rf0b7vcr9sq3k-vm-test-run-tgnome-full-context",
+    "reportSha256": "584fa39c849f484ce79bad6a93d5c3a5c206db181806d79096fce4845c5b151d",
+    "completeRuntimeReplacements": 5,
+    "physicalRunDialogResets": 2,
+    "rightClickBeforeReset": true,
+    "rightClickAfterEveryReset": true,
+    "rightClickAfterPamUnlock": true,
+    "backgroundGroupsAtEveryCheck": 1,
+    "pointerHitsCurrentBackground": true,
+    "dashToDockVersion": 105,
+    "dashEnabledThroughout": true,
+    "stylesheetChurnCyclesPerCheck": 20,
+    "originalWaylandAndXwaylandConnectionsPreserved": true,
+    "postUnlockKeyboardInputToOriginalClients": true,
+    "customShortcutPreserved": true,
+    "wrongPasswordRejected": true,
+    "observationSeconds": 65,
+    "diagnosticProblems": []
+  },
+  "headless": {
+    "reportSha256": "6fc0d04c2872c45779a96afa85b3dd451408eb9e924487de590f69603a576f59",
+    "completeRuntimeReplacements": 5,
+    "passed": true
+  },
+  "nativeControl": {
+    "reportSha256": "1019922d78832aea06004fd57b79a67abbcd90085f7aa9ea1c334e5373f85659",
+    "directAndValgrindPassed": true,
+    "generationsPerRun": 3
+  },
+  "combinedVerifierPassed": true,
+  "cliSafetyTestsPassed": 12,
+  "hardwareActivationPerformed": true,
+  "hardwareReloginAndRightClickVerificationPending": true
+}

@@ -9,6 +9,7 @@ struct TgnomeVfuncBridge {
     ffi_closure* native = nullptr;
     void* fallback = nullptr;
     GjsCallbackTrampoline* delegate = nullptr;  // Weak until invalidated.
+    GjsContext* context = nullptr;  // Borrowed while the active delegate is live.
     GThread* owner = g_thread_self();
     void* pinned_class;
 
@@ -65,14 +66,22 @@ static bool tgnome_install_vfunc_bridge(JSContext* cx, GType type, void** slot,
             return false;
         }
     }
-    if (entry->delegate) {
-        gjs_throw(cx, "Vfunc delegate is still attached");
+    auto* context = gjs_context_get_current();
+    if (entry->delegate && entry->context != context) {
+        gjs_throw(cx, "Vfunc delegate belongs to a different live context");
         return false;
     }
+    // Extensions may temporarily override and restore a vfunc in the same
+    // runtime. Superseded closures remain owned/traced by ObjectPrototype.
     entry->delegate = delegate;
+    entry->context = context;
     g_closure_add_invalidate_notifier(delegate, entry.get(),
-        [](void* data, GClosure*) {
-            static_cast<TgnomeVfuncBridge*>(data)->delegate = nullptr;
+        [](void* data, GClosure* closure) {
+            auto* bridge = static_cast<TgnomeVfuncBridge*>(data);
+            if (bridge->delegate == closure) {
+                bridge->delegate = nullptr;
+                bridge->context = nullptr;
+            }
         });
     *slot = entry->info.closure_native_address(entry->native);
     return true;

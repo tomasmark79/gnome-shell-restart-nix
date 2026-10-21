@@ -20,6 +20,7 @@ const IFACE = `<node><interface name="org.gnome.Shell.Extensions.Tgnome">
 <method name="ReloadTheme"><arg type="s" direction="out"/></method>
 <method name="ReloadPanel"><arg type="b" direction="in"/><arg type="s" direction="out"/></method>
 <method name="ExercisePanel"><arg type="s" direction="out"/></method>
+<method name="ExerciseBackgroundMenu"><arg type="s" direction="out"/></method>
 <method name="ExerciseDateMenuRealm"><arg type="s" direction="out"/></method>
 <method name="SetTestOverview"><arg type="b" direction="in"/><arg type="s" direction="out"/></method>
 <method name="PrepareRuntimeReset"><arg type="s" direction="out"/></method>
@@ -241,6 +242,40 @@ export default class RestartIsland extends Extension {
                 Main.activateWindow(focus);
         }
         return JSON.stringify({menusChecked: checked, modalCount: Main.modalCount});
+    }
+
+    async ExerciseBackgroundMenuAsync(_params, invocation) {
+        let menu = null;
+        const focus = global.display.focus_window;
+        try {
+            if (GLib.getenv('TGNOME_TEST_FAILURES') !== '1' || Main.modalCount || Main.overview.visible)
+                throw new Error('Background menu probe requires the idle test fixture');
+            const actor = Main.layoutManager._bgManagers[0].backgroundActor;
+            menu = actor._backgroundMenu;
+            if (!menu)
+                throw new Error('Desktop background menu is missing');
+            const monitor = Main.layoutManager.monitors[0];
+            Main.layoutManager.setDummyCursorGeometry(
+                monitor.x + monitor.width - 20, monitor.y + Math.floor(monitor.height / 2), 0, 0);
+            menu.open(0);
+            await new Promise(resolve =>
+                GLib.timeout_add_once(GLib.PRIORITY_DEFAULT, 150, resolve));
+            if (!menu.isOpen || !menu.actor.mapped || menu.actor.width <= 0 || menu.actor.height <= 0)
+                throw new Error('Background menu did not open and allocate');
+            const result = {opened: true, mapped: true, openedByPointer: false,
+                trigger: 'programmatic menu activation; pointer gesture is not measured',
+                allocation: [menu.actor.width, menu.actor.height]};
+            menu.close(0);
+            if (Main.modalCount || actor._backgroundManager.activeMenu)
+                throw new Error('Background menu leaked a modal grab');
+            invocation.return_value(new GLib.Variant('(s)', [JSON.stringify(result)]));
+        } catch (error) {
+            invocation.return_dbus_error('org.gnome.Shell.Tgnome.BackgroundMenuFailed', String(error));
+        } finally {
+            menu?.close(0);
+            if (focus)
+                Main.activateWindow(focus);
+        }
     }
 
     async ExerciseDateMenuRealmAsync(_params, invocation) {

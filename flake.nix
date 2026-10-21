@@ -20,6 +20,19 @@
       native-shell = suite.nativeShell;
       inherit (suite) gjs extension cli restart probe;
       type-rebind-probe = suite.nativeProbe;
+      full-context-desktop-vm = import ./tests/vm-security.nix {
+        inherit pkgs;
+        inherit (suite) probe extension;
+        recoveryCli = pkgs.symlinkJoin {
+          name = "gnome-shell-restart-tools";
+          paths = [ suite.cli suite.restart ];
+        };
+        shell = suite.nativeShell;
+        patched = true;
+        fullContext = true;
+        nativeBackend = true;
+        desktopIntegration = true;
+      };
       full-context-shortcuts-negative-vm = import ./tests/vm-security.nix {
         inherit pkgs;
         inherit (suite) probe extension;

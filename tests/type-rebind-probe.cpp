@@ -76,6 +76,21 @@ int main(int argc, char** argv) {
         g_assert(object == identity && G_OBJECT_TYPE(object) == identity_type);
         g_assert(first_signal == g_signal_lookup("pulse", identity_type));
         g_assert(expect_name(object, "rebound-" + std::to_string(generation) + ":1"));
+        // Dash to Dock uses hook_up_vfunc_symbol to override a Shell class
+        // which already has a JS implementation, then restores that method.
+        g_assert(run(context,
+            "globalThis.originalNext=RebindType.prototype.vfunc_next_file;"
+            "globalThis.injectedNext=function(){let f=new Gio.FileInfo();"
+            "f.set_name('injected');return f;};"
+            "globalThis.vfuncPrototype=RebindType.prototype[imports._gi.gobject_prototype_symbol]"
+            "??RebindType.prototype;"
+            "vfuncPrototype[imports._gi.hook_up_vfunc_symbol]('next_file',injectedNext);"));
+        g_assert(expect_name(object, "injected"));
+        g_assert(run(context,
+            "vfuncPrototype[imports._gi.hook_up_vfunc_symbol]('next_file',originalNext);"
+            "delete globalThis.vfuncPrototype;"
+            "delete globalThis.originalNext;delete globalThis.injectedNext;"));
+        g_assert(expect_name(object, "rebound-" + std::to_string(generation) + ":2"));
         int value = -1;
         g_object_get(object, "value", &value, nullptr);
         g_assert(value == static_cast<int>(generation));

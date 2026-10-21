@@ -13,6 +13,7 @@ args = parser.parse_args()
 desktop, native, vm = (json.loads(p.read_text()) for p in (args.desktop, args.native, args.vm))
 assert desktop['passed'] and desktop['originalObjectiveAchieved']
 proof = desktop['fullContextRecovery']
+assert proof['backgroundMenuBefore']['opened'] and proof['backgroundMenuBefore']['mapped']
 assert len(proof['cycles']) >= 5 and proof['observationSeconds'] >= 65
 assert not proof['diagnosticProblems'] and not proof['retiredCallbacks']
 assert proof['repeatableExecutionVerified'] and desktop['supervisor']['privateProfileRemoved']
@@ -24,6 +25,7 @@ for number, cycle in enumerate(proof['cycles'], 1):
     assert cycle['native']['pid'] == desktop['shellBefore']['pid']
     assert cycle['command']['wholeShellRestarted']
     assert cycle['overview']['opened'] and cycle['overview']['closed']
+    assert cycle['backgroundMenu']['opened'] and cycle['backgroundMenu']['mapped']
     for backend, original in ((b, desktop[b]['before']) for b in ('wayland', 'x11')):
         current = cycle['clients'][backend]
         assert all(current[k] == original[k] for k in
@@ -46,6 +48,17 @@ assert vm['before']['pid'] == vm['nativeFinal']['pid'] == vm['afterUnlock']['pid
 assert vm['nativeFinal']['contextsFinalized'] == len(vm['cycles'])
 assert vm['pathHasSystemProfile'] and vm['consoleVisibleBefore']
 assert vm['shortcutBefore'] == 1
+assert vm['backgroundMenuBefore']['opened'] and vm['backgroundMenuAfterUnlock']['opened']
+for pointer in [vm['backgroundPointerBefore'], vm['backgroundPointerAfterUnlock'],
+                *(c['backgroundPointer'] for c in vm['cycles'])]:
+    assert pointer['opened'] and pointer['mapped'] and pointer['pickedIsCurrentBackground']
+    assert pointer['backgroundGroups'] == 1
+assert vm['themeBefore']['validCustomStylesheets'] and vm['themeAfterUnlock']['validCustomStylesheets']
+assert all(c['backgroundMenu']['opened'] and c['theme']['validCustomStylesheets']
+           for c in vm['cycles'])
+if vm['desktopIntegration']:
+    assert vm['dashBefore'] == vm['dashAfterUnlock'] == 1
+    assert all(c['dashState'] == 1 for c in vm['cycles'])
 assert all(c['customShortcutCount'] == i + 1 for i, c in enumerate(vm['cycles'], 1))
 assert set(vm['nativeKeyboardInput']) == {'wayland', 'x11'}
 for backend, current in vm['nativeKeyboardInput'].items():

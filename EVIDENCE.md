@@ -1,5 +1,11 @@
 # Verified results
 
+The longer hardware trial exposed two additional defects and a separate
+background-pointer regression; see the [incident report](INCIDENT-2026-10-21.md).
+Historical passes below did not exercise physical desktop right-clicks. The
+current VM test includes actual QEMU pointer input before and after replacement
+and after authentication, and requires a single live background group.
+
 The latest [run-dialog verification](evidence/2026-10-21-run-dialog.json) adds
 two physical **Alt+F2 → r → Enter** requests among five native VM replacements.
 All five preserve clients and custom shortcuts; lock/authentication, subsequent
@@ -55,10 +61,11 @@ The command used by the VM is the packaged user command, not a synthetic reset.
 Recheck the saved evidence and produce its SHA-256/source manifest:
 
 ```sh
+vm=$(nix build --no-link --print-out-paths .#full-context-desktop-vm)
 python3 tests/verify-results.py \
-  --desktop artifacts/run-dialog-headless/result.json \
-  --native artifacts/native-control.json \
-  --vm /nix/store/8yfrsajrz38x4l9f6zhm669drpkwdam8-vm-test-run-tgnome-full-context/evidence/tgnome-evidence/result.json
+  --desktop artifacts/pointer-fixed-headless/result.json \
+  --native artifacts/incident-native-control-2.json \
+  --vm "$vm/evidence/tgnome-evidence/result.json"
 ```
 
 For a fresh run, build `.#full-context-native-vm` with `--print-out-paths` and

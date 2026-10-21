@@ -5,6 +5,11 @@ keeping the same Mutter process and existing Wayland and XWayland connections.
 Pinned versions: GNOME Shell/Mutter 50.5, GJS 1.88.1, SpiderMonkey 140, x86_64-linux.
 This is an independent experiment, not an official GNOME feature.
 
+A longer hardware session later exposed failed UI startup and extension
+compatibility defects. See the [incident analysis](INCIDENT-2026-10-21.md) for
+reproductions, fixes and remaining uncertainty about the reported right-click
+gesture. Earlier successful runs do not establish long-session reliability.
+
 Five complete replacements passed in the latest isolated desktop and native VM
 tests, including a custom Super+T shortcut before and after each VM replacement.
 Three complete replacements also passed in each of two earlier private desktop

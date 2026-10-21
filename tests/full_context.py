@@ -41,6 +41,7 @@ def verify(*, call, native_call, wait_for, shell, output, work, report,
         copy_frame(before_overview['path'], 'full-overview-before')
         proof['frameBefore'] = copy_frame(call('CaptureTestFrame')['path'], 'full-desktop-before')
         call('ExerciseWindowMenu')
+        proof['backgroundMenuBefore'] = call('ExerciseBackgroundMenu')
         proof['nativeBefore'] = native_call('Status')
         epochs = {baseline['runtimeEpoch']}
         for number in range(1, 6):
@@ -70,6 +71,7 @@ def verify(*, call, native_call, wait_for, shell, output, work, report,
             assert after['shellState']['mode'] == 'user'
             assert after['shellState']['modalCount'] == 0
             cycle['menus'] = call('ExercisePanel')
+            cycle['backgroundMenu'] = call('ExerciseBackgroundMenu')
             cycle['overview'] = call('ExerciseNativeOverview')
             cycle['overviewFrame'] = copy_frame(cycle['overview']['path'], f'full-overview-{number}')
             cycle['windowMenu'] = call('ExerciseWindowMenu')

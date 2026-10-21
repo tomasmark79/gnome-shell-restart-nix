@@ -1,5 +1,6 @@
 { pkgs, probe, shell ? pkgs.gnome-shell, extension ? null, recoveryCli ? null,
-  patched ? false, lockRace ? "none", fullContext ? false, nativeBackend ? false }:
+  patched ? false, lockRace ? "none", fullContext ? false, nativeBackend ? false,
+  desktopIntegration ? false }:
 
 # Explicit, expensive VM target. This is never imported into the host system.
 # First establish real GDM/PAM/logind behavior before testing patched UI lifetime.
@@ -38,8 +39,10 @@ pkgs.testers.runNixOSTest {
     };
     environment.systemPackages = [ probe pkgs.glib pkgs.python3 ]
       ++ pkgs.lib.optional patched extension
+      ++ pkgs.lib.optional desktopIntegration pkgs.gnomeExtensions.dash-to-dock
       ++ pkgs.lib.optional (recoveryCli != null) recoveryCli;
     environment.etc."tgnome-vm-race".text = lockRace;
+    environment.etc."tgnome-desktop-integration".text = if desktopIntegration then "1" else "0";
     # /etc entries are normally symlinks. The native VM gate deliberately
     # requires a root-owned regular file, materialized only inside this guest.
     system.activationScripts.tgnome-fixture = ''
@@ -52,6 +55,8 @@ pkgs.testers.runNixOSTest {
       settings = {
         "org/gnome/shell".welcome-dialog-last-shown-version = "50.5";
         "org/gnome/desktop/session".idle-delay = pkgs.lib.gvariant.mkUint32 0;
+      } // pkgs.lib.optionalAttrs desktopIntegration {
+        "org/gnome/shell".enabled-extensions = [ "dash-to-dock@micxgx.gmail.com" ];
       } // pkgs.lib.optionalAttrs fullContext {
         "org/gnome/settings-daemon/plugins/media-keys".custom-keybindings = [
           "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/tgnome-test/"

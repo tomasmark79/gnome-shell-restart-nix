@@ -11,6 +11,23 @@ def replace(path, old, new):
 
 replace('js/ui/init.js', '            let removed = 0;',
         '            tgnomeReleaseNativeWork();\n            let removed = 0;')
+# The compositor-owned window_group survives a reset. Background groups are
+# Shell UI children of that group, outside uiGroup; upstream only tears them
+# down on process exit. Retaining them leaves a dead reactive background above
+# the newly inserted group, intercepting pointer input after the first reset.
+replace('js/ui/layout.js',
+        '''            this._destroyHotCorners();
+            this._destroyPanelBarrier();
+            this.uiGroup.destroy();''',
+        '''            this._bgLoadCancellable?.cancel();
+            this._bgLoadCancellable = null;
+            for (const manager of this._bgManagers)
+                manager.destroy();
+            this._bgManagers = [];
+            this._backgroundGroup.destroy();
+            this._destroyHotCorners();
+            this._destroyPanelBarrier();
+            this.uiGroup.destroy();''')
 replace('src/tgnome-runtime.h', 'static gboolean tgnome_probe_allowed;',
         '''extern char *gjs_tgnome_callback_lifetimes (void);
 extern unsigned gjs_tgnome_rebind_bridge_count (void);
@@ -80,6 +97,16 @@ replace('js/ui/runDialog.js',
             'lg': () => Main.createLookingGlass().open(),""")
 replace('src/meson.build', 'gnome_shell_deps = [',
         "gnome_shell_deps = [\n  dependency('atspi-2'),")
+# Reloads and failed extension enable paths may load an already active file.
+# A duplicate list entry otherwise survives unload after its GFile map entry is
+# removed, and Main.loadTheme() later receives a null custom stylesheet.
+replace('src/st/st-theme.c',
+        '  stylesheet = resolve_stylesheet (theme, file, error);',
+        '''  stylesheet = g_hash_table_lookup (theme->stylesheets_by_file, file);
+  if (stylesheet && g_slist_find (theme->custom_stylesheets, stylesheet))
+    return TRUE;
+
+  stylesheet = resolve_stylesheet (theme, file, error);''')
 replace('js/misc/ibusManager.js',
         '''            GLib.child_watch_add(
                 GLib.PRIORITY_DEFAULT,
