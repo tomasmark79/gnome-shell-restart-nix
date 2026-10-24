@@ -52,16 +52,58 @@ function assertPanelTransferSettled() {
 
 class UIIsland {
     constructor(generation) {
-        this.button = new PanelMenu.Button(0.0, 'Tgnome lifetime experiment');
+        const description = `UI island · generation ${generation}`;
+        this.button = new PanelMenu.Button(0.0, description, true);
+        this.button.accessible_name = description;
+        this.button.track_hover = true;
+        this._tooltip = null;
         actorsCreated++;
-        this.button.connect('destroy', () => actorsDestroyed++);
+        this.button.connect('destroy', () => {
+            this._tooltip?.destroy();
+            this._tooltip = null;
+            actorsDestroyed++;
+        });
         try {
-            this.button.add_child(new St.Label({text: `UI island ${generation}`}));
+            this.button.add_child(new St.Label({
+                text: '⚗️',
+                style: 'font-size: 16px;',
+                y_align: Clutter.ActorAlign.CENTER,
+            }));
+            this._tooltip = new St.Label({
+                text: description,
+                style_class: 'dash-label',
+                reactive: false,
+                visible: false,
+            });
+            Main.uiGroup.add_child(this._tooltip);
+            this.button.connect('notify::hover', () => this._syncTooltip());
+            this.button.connect('notify::mapped', () => this._syncTooltip());
             Main.panel.addToStatusArea('tgnome-island', this.button);
         } catch (error) {
             this.destroy();
             throw error;
         }
+    }
+
+    _syncTooltip() {
+        if (!this._tooltip)
+            return;
+
+        if (!this.button.hover || !this.button.mapped) {
+            this._tooltip.hide();
+            return;
+        }
+
+        const [x, y] = this.button.get_transformed_position();
+        const [width, height] = this.button.get_transformed_size();
+        const [, , tooltipWidth] = this._tooltip.get_preferred_size();
+        const monitor = Main.layoutManager.findMonitorForActor(this.button);
+        let tooltipX = x + (width - tooltipWidth) / 2;
+        if (monitor)
+            tooltipX = Math.max(monitor.x, Math.min(tooltipX,
+                monitor.x + monitor.width - tooltipWidth));
+        this._tooltip.set_position(Math.round(tooltipX), Math.round(y + height + 6));
+        this._tooltip.show();
     }
 
     destroy() {
